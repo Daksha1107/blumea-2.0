@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
-    "seed:admin": "tsx scripts/seedAdmin.ts"
+    "seed:admin": "tsx scripts/seedAdmin.ts",
+    "validate": "tsx scripts/validate.ts"
   },
   "dependencies": {
     "next": "^14.0.4",

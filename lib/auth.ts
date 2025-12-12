@@ -1,9 +1,8 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { env } from './env';
 import { getCollection, Collections } from './mongodb';
 import { User } from '@/types';
-import { ObjectId } from 'mongodb';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -72,5 +71,3 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 };
-
-export default NextAuth(authOptions);
