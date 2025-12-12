@@ -59,9 +59,14 @@ export async function checkRateLimit(
 
   // Custom limit if provided
   if (limit) {
+    const redis = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL!,
+      token: env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+    
     const customLimiter = new Ratelimit({
-      redis: limiter.redis,
-      limiter: Ratelimit.slidingWindow(limit.requests, limit.window),
+      redis,
+      limiter: Ratelimit.slidingWindow(limit.requests, limit.window as any),
       analytics: true,
       prefix: 'blumea_ratelimit',
     });

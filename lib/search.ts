@@ -40,7 +40,7 @@ export async function searchArticles(options: SearchOptions): Promise<SearchResu
 
   // Execute search with projection for text score
   const projection = query ? { score: { $meta: 'textScore' } } : {};
-  const sort = query ? { score: { $meta: 'textScore' } } : { publishedAt: -1 };
+  const sort: any = query ? { score: { $meta: 'textScore' } } : { publishedAt: -1 };
 
   const [results, total] = await Promise.all([
     articles
