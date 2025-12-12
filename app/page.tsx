@@ -3,7 +3,9 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import ArticleGrid from '@/components/ArticleGrid';
+import ArticleCarousel from '@/components/ArticleCarousel';
 import Sidebar from '@/components/Sidebar';
+import SkipToContent from '@/components/SkipToContent';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { Article, Topic } from '@/types';
 import { generateSEOMetadata } from '@/lib/seo';
@@ -23,10 +25,10 @@ async function getHomePageData() {
     const topics = await getCollection<Topic>(Collections.TOPICS);
 
     // Get latest published articles
-    const latestArticles = await getLatestArticles(10);
+    const latestArticles = await getLatestArticles(12);
     
-    // Get popular articles for sidebar
-    const popularPosts = await getPopularArticles(3);
+    // Get popular articles for sidebar and carousel
+    const popularPosts = await getPopularArticles(10);
 
     // Get categories with counts
     const topicsData = await topics.find().toArray();
@@ -47,7 +49,9 @@ async function getHomePageData() {
     return {
       featuredArticle: latestArticles[0],
       secondaryArticle: latestArticles[1],
-      recentArticles: latestArticles.slice(2, 8),
+      newArticles: latestArticles.slice(2, 8),
+      popularArticles: popularPosts.slice(0, 6),
+      recentArticles: latestArticles.slice(8, 12),
       popularPosts: popularPosts.slice(0, 3),
       categories: categoriesWithCounts.filter((c) => c.count > 0),
     };
@@ -56,6 +60,8 @@ async function getHomePageData() {
     return {
       featuredArticle: null,
       secondaryArticle: null,
+      newArticles: [],
+      popularArticles: [],
       recentArticles: [],
       popularPosts: [],
       categories: [],
@@ -64,14 +70,22 @@ async function getHomePageData() {
 }
 
 export default async function HomePage() {
-  const { featuredArticle, secondaryArticle, recentArticles, popularPosts, categories } =
-    await getHomePageData();
+  const { 
+    featuredArticle, 
+    secondaryArticle, 
+    newArticles,
+    popularArticles,
+    recentArticles, 
+    popularPosts, 
+    categories 
+  } = await getHomePageData();
 
   if (!featuredArticle) {
     return (
       <div className="min-h-screen flex flex-col">
+        <SkipToContent />
         <Header />
-        <main className="flex-1 container py-12">
+        <main id="main-content" className="flex-1 container py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4">Welcome to Skincare & Wellness</h1>
             <p className="text-muted-foreground">
@@ -86,19 +100,27 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SkipToContent />
       <Header />
       
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <HeroSection
           featuredArticle={featuredArticle}
           secondaryArticle={secondaryArticle || undefined}
         />
 
         <section className="container py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-6">Latest Articles</h2>
+              {/* Article Carousel */}
+              <ArticleCarousel 
+                newArticles={newArticles} 
+                popularArticles={popularArticles}
+              />
+
+              {/* Recent Articles Grid */}
+              <div className="mt-12">
+                <h2 className="text-3xl font-serif font-bold mb-8">Latest Articles</h2>
                 <ArticleGrid articles={recentArticles} />
               </div>
             </div>
