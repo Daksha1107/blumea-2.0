@@ -11,6 +11,7 @@ async function seedAdmin() {
       email: 'admin@blumea.com',
       name: 'Admin User',
       role: 'admin',
+      status: 'active',
       // In production, this should be a properly hashed password using bcrypt
       // For demo purposes, using plain text (DO NOT DO THIS IN PRODUCTION)
       passwordHash: 'admin123',

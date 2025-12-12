@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchArticles } from '@/lib/search';
-import { rateLimitMiddleware } from '@/lib/rateLimit';
+import { rateLimitMiddleware, limits } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
-  // Rate limiting
-  const rateLimitResponse = await rateLimitMiddleware(request, { requests: 20, window: '60 s' });
+  // Rate limiting with search-specific limit
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.search);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }

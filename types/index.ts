@@ -1,17 +1,21 @@
 import { ObjectId } from 'mongodb';
 
-export type UserRole = 'viewer' | 'editor' | 'seo' | 'admin';
+export type UserRole = 'viewer' | 'contributor' | 'editor' | 'seo' | 'publisher' | 'admin';
 
-export type ArticleStatus = 'draft' | 'published' | 'archived';
+export type ArticleStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export type UserStatus = 'active' | 'disabled';
 
 export interface User {
   _id?: ObjectId;
   email: string;
   name: string;
   role: UserRole;
+  status: UserStatus;
   passwordHash?: string;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,11 +49,17 @@ export interface Topic {
 export interface Media {
   _id?: ObjectId;
   url: string;
+  cdnUrl?: string;
   mimeType: string;
   width?: number;
   height?: number;
   altText: string;
+  caption?: string;
+  credit?: string;
+  source: 'upload' | 'generated';
+  moderationStatus: 'pending' | 'approved' | 'rejected';
   uploadedBy: ObjectId;
+  deletedAt?: Date;
   createdAt: Date;
 }
 
@@ -57,8 +67,10 @@ export interface SEOMetadata {
   title: string;
   description: string;
   keywords: string[];
+  primaryKeyword?: string;
   ogImage?: string;
   canonicalUrl?: string;
+  noindex?: boolean;
 }
 
 export interface Article {
@@ -72,6 +84,7 @@ export interface Article {
   keywords: string[];
   status: ArticleStatus;
   publishedAt?: Date;
+  scheduledFor?: Date;
   featuredImageId?: ObjectId;
   readingTime?: number;
   rating?: number;
@@ -81,6 +94,13 @@ export interface Article {
     [locale: string]: ObjectId;
   };
   viewCount?: number;
+  version?: number;
+  previousVersions?: Array<{
+    version: number;
+    bodyHtml: string;
+    savedAt: Date;
+    savedBy: ObjectId;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,10 +108,23 @@ export interface Article {
 export interface PublishJob {
   _id?: ObjectId;
   articleId: ObjectId;
+  userId: ObjectId;
   status: JobStatus;
   startedAt?: Date;
   completedAt?: Date;
   error?: string;
+  createdAt: Date;
+}
+
+export interface AuditLog {
+  _id?: ObjectId;
+  userId: ObjectId;
+  action: string;
+  targetType: 'user' | 'article' | 'media' | 'topic';
+  targetId?: ObjectId;
+  changes?: any;
+  ipAddress?: string;
+  userAgent?: string;
   createdAt: Date;
 }
 

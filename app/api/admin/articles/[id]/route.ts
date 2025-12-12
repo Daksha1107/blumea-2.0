@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/rbac';
+import { rateLimitMiddleware, limits } from '@/lib/rateLimit';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { Article } from '@/types';
 import { sanitizeHTML } from '@/lib/sanitize';
@@ -12,6 +13,12 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  // Rate limiting for admin endpoints
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.admin);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { auth, response } = await requireRole('viewer');
   
   if (response) {
@@ -34,6 +41,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  // Rate limiting for admin endpoints
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.admin);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { auth, response } = await requireRole('editor');
   
   if (response) {
@@ -82,6 +95,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  // Rate limiting for admin endpoints
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.admin);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { auth, response } = await requireRole('admin');
   
   if (response) {

@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, Document } from 'mongodb';
 import { env } from './env';
 
 let client: MongoClient | null = null;
@@ -47,7 +47,7 @@ export async function closeDatabase(): Promise<void> {
 }
 
 // Collection helpers
-export async function getCollection<T>(name: string) {
+export async function getCollection<T extends Document>(name: string) {
   const database = await getDatabase();
   return database.collection<T>(name);
 }
@@ -61,4 +61,5 @@ export const Collections = {
   USERS: 'users',
   PUBLISH_JOBS: 'publishJobs',
   STRATEGY_RUNS: 'strategyRuns',
+  AUDIT_LOGS: 'auditLogs',
 } as const;

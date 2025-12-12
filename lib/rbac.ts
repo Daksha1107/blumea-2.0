@@ -5,9 +5,11 @@ import { NextResponse } from 'next/server';
 
 const roleHierarchy: Record<UserRole, number> = {
   viewer: 1,
-  editor: 2,
-  seo: 3,
-  admin: 4,
+  contributor: 2,
+  editor: 3,
+  seo: 4,
+  publisher: 5,
+  admin: 6,
 };
 
 export async function checkAuth() {
@@ -24,27 +26,36 @@ export async function checkAuth() {
   };
 }
 
-export async function requireAuth() {
+export async function requireAuth(): Promise<
+  | { auth: null; response: NextResponse }
+  | { auth: NonNullable<Awaited<ReturnType<typeof checkAuth>>>; response: null }
+> {
   const auth = await checkAuth();
   
   if (!auth.authenticated) {
-    return NextResponse.json(
-      { error: 'Unauthorized', message: 'Authentication required' },
-      { status: 401 }
-    );
+    return {
+      auth: null,
+      response: NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required' },
+        { status: 401 }
+      ),
+    };
   }
 
   return { auth, response: null };
 }
 
-export async function requireRole(minRole: UserRole) {
-  const { auth, response } = await requireAuth();
+export async function requireRole(minRole: UserRole): Promise<
+  | { auth: null; response: NextResponse }
+  | { auth: NonNullable<Awaited<ReturnType<typeof checkAuth>>>; response: null }
+> {
+  const result = await requireAuth();
   
-  if (response) {
-    return { auth: null, response };
+  if (result.response) {
+    return { auth: null, response: result.response };
   }
 
-  const userRoleLevel = roleHierarchy[auth.role!];
+  const userRoleLevel = roleHierarchy[result.auth.role!];
   const requiredRoleLevel = roleHierarchy[minRole];
 
   if (userRoleLevel < requiredRoleLevel) {
@@ -57,7 +68,7 @@ export async function requireRole(minRole: UserRole) {
     };
   }
 
-  return { auth, response: null };
+  return { auth: result.auth, response: null };
 }
 
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
@@ -70,6 +81,10 @@ export function canEdit(userRole: UserRole): boolean {
 
 export function canManageSEO(userRole: UserRole): boolean {
   return hasRole(userRole, 'seo');
+}
+
+export function canPublish(userRole: UserRole): boolean {
+  return hasRole(userRole, 'publisher');
 }
 
 export function canAdmin(userRole: UserRole): boolean {
