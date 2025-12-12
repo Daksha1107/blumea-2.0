@@ -1,0 +1,17 @@
+# Code Owners
+# These owners will be requested for review when PRs modify files in these paths
+
+# Default owners for everything
+* @Daksha1107
+
+# Backend & Infrastructure
+/lib/** @Daksha1107
+/scripts/** @Daksha1107
+
+# Frontend Components
+/components/** @Daksha1107
+/app/** @Daksha1107
+
+# Configuration
+/.github/** @Daksha1107
+*.config.* @Daksha1107
