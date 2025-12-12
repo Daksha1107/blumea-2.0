@@ -4,24 +4,37 @@
 
 @layer base {
   :root {
-    --background: 26 26 26;
+    /* Exact design tokens from spec */
+    --bg: #0f0f0f;
+    --panel: #141414;
+    --card: #1a1a1a;
+    --card-hover: #242424;
+    --text: #f5f5f5;
+    --text-muted: #9a9a9a;
+    --accent: #c9a962;
+    --accent-muted: #8b7355;
+    --border: #262626;
+    --glass: rgba(255, 255, 255, 0.02);
+    
+    /* Tailwind CSS variable mapping */
+    --background: 15 15 15;
     --foreground: 245 245 245;
-    --card: 42 42 42;
+    --card: 26 26 26;
     --card-foreground: 245 245 245;
-    --popover: 42 42 42;
+    --popover: 20 20 20;
     --popover-foreground: 245 245 245;
     --primary: 201 169 98;
     --primary-foreground: 26 26 26;
     --secondary: 139 115 85;
     --secondary-foreground: 245 245 245;
-    --muted: 102 102 102;
-    --muted-foreground: 163 163 163;
+    --muted: 154 154 154;
+    --muted-foreground: 154 154 154;
     --accent: 201 169 98;
     --accent-foreground: 26 26 26;
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 64 64 64;
-    --input: 64 64 64;
+    --border: 38 38 38;
+    --input: 38 38 38;
     --ring: 201 169 98;
     --radius: 0.5rem;
   }
@@ -32,7 +45,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[--bg] text-[--text];
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-inter), sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), serif;
   }
 }
 
@@ -51,5 +71,14 @@
   
   .card-hover {
     @apply hover:bg-[#333333] transition-colors;
+  }
+  
+  /* Hide scrollbars while maintaining scroll functionality */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
