@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { path, tag, secret } = body;
+    const { path, paths, tag, secret } = body;
 
     // Verify secret token
     if (secret !== process.env.REVALIDATION_SECRET) {
@@ -14,6 +14,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Revalidate multiple paths
+    if (paths && Array.isArray(paths)) {
+      const results = [];
+      for (const p of paths) {
+        try {
+          revalidatePath(p);
+          results.push({ path: p, success: true });
+        } catch (error) {
+          console.error(`Failed to revalidate path ${p}:`, error);
+          results.push({ path: p, success: false, error: String(error) });
+        }
+      }
+      return NextResponse.json({ 
+        success: true, 
+        revalidated: true,
+        results,
+        message: `Revalidated ${paths.length} paths` 
+      });
+    }
+
+    // Revalidate single path
     if (path) {
       revalidatePath(path);
       return NextResponse.json({ 
@@ -23,6 +44,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Revalidate by tag
     if (tag) {
       revalidateTag(tag);
       return NextResponse.json({ 
@@ -33,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Missing path or tag parameter' },
+      { error: 'Missing path, paths, or tag parameter' },
       { status: 400 }
     );
   } catch (error) {

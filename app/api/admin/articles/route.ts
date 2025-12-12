@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/rbac';
+import { rateLimitMiddleware, limits } from '@/lib/rateLimit';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { Article } from '@/types';
 import { sanitizeHTML } from '@/lib/sanitize';
 import { ObjectId } from 'mongodb';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting for admin endpoints
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.admin);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { auth, response } = await requireRole('editor');
   
   if (response) {
@@ -96,6 +103,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting for admin endpoints
+  const rateLimitResponse = await rateLimitMiddleware(request, limits.admin);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { auth, response } = await requireRole('viewer');
   
   if (response) {

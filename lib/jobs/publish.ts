@@ -21,9 +21,19 @@ async function processPublishJob(job: Job<PublishJobData>): Promise<{ success: b
   try {
     const articles = await getCollection<Article>(Collections.ARTICLES);
     
+    // Find article and validate it can be published
+    const existingArticle = await articles.findOne({ 
+      _id: new ObjectId(articleId), 
+      status: { $in: ['draft', 'scheduled'] }
+    });
+    
+    if (!existingArticle) {
+      throw new Error(`Article ${articleId} not found or already published`);
+    }
+    
     // Update article status to published
     const result = await articles.findOneAndUpdate(
-      { _id: new ObjectId(articleId), status: 'draft' },
+      { _id: new ObjectId(articleId) },
       {
         $set: {
           status: 'published',
@@ -35,10 +45,52 @@ async function processPublishJob(job: Job<PublishJobData>): Promise<{ success: b
     );
 
     if (!result) {
-      throw new Error(`Article ${articleId} not found or already published`);
+      throw new Error(`Failed to update article ${articleId}`);
     }
 
     console.log(`✅ Published article ${articleId}`);
+
+    // Call revalidation webhook to update Next.js cache
+    try {
+      const revalidationSecret = env.REVALIDATION_SECRET || 'dev-secret';
+      const baseUrl = env.NEXTAUTH_URL || 'http://localhost:3000';
+      
+      const revalidateResponse = await fetch(`${baseUrl}/api/hooks/revalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paths: [`/blog/${result.slug}`, '/'],
+          secret: revalidationSecret,
+        }),
+      });
+
+      if (!revalidateResponse.ok) {
+        console.error('Failed to revalidate paths:', await revalidateResponse.text());
+      } else {
+        console.log(`✅ Revalidated paths for article ${articleId}`);
+      }
+    } catch (revalidateError) {
+      console.error('Error calling revalidation webhook:', revalidateError);
+      // Don't fail the job if revalidation fails
+    }
+
+    // Log to audit trail
+    try {
+      const auditLogs = await getCollection(Collections.AUDIT_LOGS);
+      await auditLogs.insertOne({
+        userId: new ObjectId(userId),
+        action: 'publish_article',
+        targetType: 'article',
+        targetId: new ObjectId(articleId),
+        changes: { status: 'published', publishedAt: result.publishedAt },
+        createdAt: new Date(),
+      });
+    } catch (auditError) {
+      console.error('Error logging to audit trail:', auditError);
+      // Don't fail the job if audit logging fails
+    }
 
     return {
       success: true,

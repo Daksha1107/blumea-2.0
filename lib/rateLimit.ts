@@ -3,11 +3,19 @@ import { Redis } from '@upstash/redis';
 import { env } from './env';
 import { NextRequest, NextResponse } from 'next/server';
 
-let ratelimit: Ratelimit | null = null;
+// Different limits for different endpoints
+export const limits = {
+  public: { requests: 100, window: '60s' },      // /api/search, /api/articles
+  admin: { requests: 200, window: '60s' },       // /api/admin/*
+  llm: { requests: 10, window: '60s' },          // LLM polish endpoints
+  search: { requests: 30, window: '60s' },       // /api/search specifically
+} as const;
 
-function getRatelimit(): Ratelimit | null {
-  if (ratelimit) {
-    return ratelimit;
+let redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (redis) {
+    return redis;
   }
 
   // Only initialize if Upstash credentials are available
@@ -17,38 +25,32 @@ function getRatelimit(): Ratelimit | null {
   }
 
   try {
-    const redis = new Redis({
+    redis = new Redis({
       url: env.UPSTASH_REDIS_REST_URL,
       token: env.UPSTASH_REDIS_REST_TOKEN,
     });
 
-    ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(10, '10 s'), // 10 requests per 10 seconds
-      analytics: true,
-      prefix: 'blumea_ratelimit',
-    });
-
-    return ratelimit;
+    return redis;
   } catch (error) {
-    console.error('Failed to initialize rate limiter:', error);
+    console.error('Failed to initialize Redis:', error);
     return null;
   }
 }
 
 export async function checkRateLimit(
   identifier: string,
-  limit?: { requests: number; window: string }
+  limit: { requests: number; window: string }
 ): Promise<{
   success: boolean;
   limit: number;
   remaining: number;
   reset: number;
 }> {
-  const limiter = getRatelimit();
+  const redisClient = getRedis();
 
-  if (!limiter) {
-    // If rate limiting is not configured, allow all requests
+  if (!redisClient) {
+    // If rate limiting is not configured, allow all requests but log warning
+    console.warn('⚠️  Rate limiting not available, allowing request');
     return {
       success: true,
       limit: Infinity,
@@ -57,26 +59,27 @@ export async function checkRateLimit(
     };
   }
 
-  // Custom limit if provided
-  if (limit) {
-    const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL!,
-      token: env.UPSTASH_REDIS_REST_TOKEN!,
-    });
-    
-    const customLimiter = new Ratelimit({
-      redis,
+  try {
+    const limiter = new Ratelimit({
+      redis: redisClient,
       limiter: Ratelimit.slidingWindow(limit.requests, limit.window as any),
       analytics: true,
       prefix: 'blumea_ratelimit',
     });
 
-    const result = await customLimiter.limit(identifier);
+    const result = await limiter.limit(identifier);
     return result;
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+    // Graceful fallback - fail open with alert
+    console.error('⚠️  Rate limiting unavailable, failing open');
+    return {
+      success: true,
+      limit: Infinity,
+      remaining: Infinity,
+      reset: 0,
+    };
   }
-
-  const result = await limiter.limit(identifier);
-  return result;
 }
 
 export function getClientIp(request: NextRequest): string {
@@ -102,7 +105,7 @@ export function getClientIp(request: NextRequest): string {
 
 export async function rateLimitMiddleware(
   request: NextRequest,
-  limit?: { requests: number; window: string }
+  limit: { requests: number; window: string }
 ): Promise<NextResponse | null> {
   const ip = getClientIp(request);
   const result = await checkRateLimit(ip, limit);
