@@ -1,31 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRole } from '@/lib/rbac';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { Article } from '@/types';
-import { requireRole } from '@/lib/rbac';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { sanitizeHTML } from '@/lib/sanitize';
 import { ObjectId } from 'mongodb';
 
 export async function POST(request: NextRequest) {
+  const { auth, response } = await requireRole('editor');
+  
+  if (response) {
+    return response;
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has editor role or higher
-    if (!requireRole(session.user.role, 'editor')) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Editor role required' },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const {
       title,
@@ -50,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Sanitize HTML content
-    const sanitizedHtml = sanitizeHtml(bodyHtml);
+    const sanitizedHtml = sanitizeHTML(bodyHtml);
 
     // Generate slug from title
     const slug = title
@@ -109,32 +96,26 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const { auth, response } = await requireRole('viewer');
+  
+  if (response) {
+    return response;
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has viewer role or higher
-    if (!requireRole(session.user.role, 'viewer')) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const status = searchParams.get('status') || 'draft';
+    const statusParam = searchParams.get('status') || 'draft';
     
     const skip = (page - 1) * limit;
     
     const articles = await getCollection<Article>(Collections.ARTICLES);
+    
+    // Validate status is a valid ArticleStatus
+    const status = ['draft', 'published', 'archived'].includes(statusParam) 
+      ? statusParam as 'draft' | 'published' | 'archived'
+      : 'draft';
     
     const [items, total] = await Promise.all([
       articles

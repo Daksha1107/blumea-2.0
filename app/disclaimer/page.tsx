@@ -59,7 +59,7 @@ export default function DisclaimerPage() {
           
           <h2>5. Product Claims</h2>
           <p>
-            Any claims made about specific products are based on the manufacturer's
+            Any claims made about specific products are based on the manufacturer&apos;s
             statements and available research. We make no guarantees about the effectiveness
             of any product mentioned on this site.
           </p>

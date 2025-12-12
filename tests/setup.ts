@@ -2,6 +2,7 @@ import { beforeAll, afterAll } from 'vitest';
 
 // Setup test environment
 beforeAll(() => {
+  // @ts-ignore - Allow setting NODE_ENV in test environment
   process.env.NODE_ENV = 'test';
   process.env.MONGODB_URI = 'mongodb://localhost:27017';
   process.env.MONGODB_DBNAME = 'blumea_test';

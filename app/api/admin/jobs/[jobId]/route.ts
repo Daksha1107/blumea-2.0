@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRole } from '@/lib/rbac';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { PublishJob } from '@/types';
-import { requireRole } from '@/lib/rbac';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
@@ -13,13 +11,13 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !requireRole(session.user.role, 'viewer')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { auth, response } = await requireRole('viewer');
+  
+  if (response) {
+    return response;
+  }
 
+  try {
     const jobs = await getCollection<PublishJob>(Collections.PUBLISH_JOBS);
     const job = await jobs.findOne({ _id: new ObjectId(params.jobId) });
 

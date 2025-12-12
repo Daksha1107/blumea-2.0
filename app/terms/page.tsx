@@ -34,7 +34,7 @@ export default function TermsPage() {
           
           <h2>3. Disclaimer</h2>
           <p>
-            The materials on Skincare & Wellness website are provided on an 'as is' basis.
+            The materials on Skincare & Wellness website are provided on an &apos;as is&apos; basis.
             Skincare & Wellness makes no warranties, expressed or implied, and hereby
             disclaims and negates all other warranties including, without limitation,
             implied warranties or conditions of merchantability, fitness for a particular

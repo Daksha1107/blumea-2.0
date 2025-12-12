@@ -28,7 +28,7 @@ export default function CookieBanner() {
             <div className="flex-1">
               <p className="text-sm text-foreground">
                 We use cookies to enhance your browsing experience and analyze our traffic. 
-                By clicking "Accept", you consent to our use of cookies.
+                By clicking &quot;Accept&quot;, you consent to our use of cookies.
               </p>
             </div>
             <div className="flex gap-2">

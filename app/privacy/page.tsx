@@ -58,7 +58,7 @@ export default function PrivacyPage() {
             You may also object to or restrict certain processing of your information.
           </p>
           
-          <h2>7. Children's Privacy</h2>
+          <h2>7. Children&apos;s Privacy</h2>
           <p>
             Our services are not directed to children under 13. We do not knowingly
             collect personal information from children under 13.

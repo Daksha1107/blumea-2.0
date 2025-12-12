@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRole } from '@/lib/rbac';
 import { getCollection, Collections } from '@/lib/mongodb';
 import { Article } from '@/types';
-import { requireRole } from '@/lib/rbac';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { sanitizeHTML } from '@/lib/sanitize';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
@@ -14,13 +12,13 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !requireRole(session.user.role, 'viewer')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { auth, response } = await requireRole('viewer');
+  
+  if (response) {
+    return response;
+  }
 
+  try {
     const articles = await getCollection<Article>(Collections.ARTICLES);
     const article = await articles.findOne({ _id: new ObjectId(params.id) });
 
@@ -36,16 +34,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !requireRole(session.user.role, 'editor')) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Editor role required' },
-        { status: 403 }
-      );
-    }
+  const { auth, response } = await requireRole('editor');
+  
+  if (response) {
+    return response;
+  }
 
+  try {
     const body = await request.json();
     const articles = await getCollection<Article>(Collections.ARTICLES);
 
@@ -62,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     };
 
     if (body.bodyHtml) {
-      updateData.bodyHtml = sanitizeHtml(body.bodyHtml);
+      updateData.bodyHtml = sanitizeHTML(body.bodyHtml);
     }
 
     // Convert string IDs to ObjectId
@@ -87,16 +82,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !requireRole(session.user.role, 'admin')) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Admin role required' },
-        { status: 403 }
-      );
-    }
+  const { auth, response } = await requireRole('admin');
+  
+  if (response) {
+    return response;
+  }
 
+  try {
     const articles = await getCollection<Article>(Collections.ARTICLES);
 
     // Soft delete by setting status to archived

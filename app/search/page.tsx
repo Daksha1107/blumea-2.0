@@ -82,7 +82,7 @@ export default function SearchPage() {
         {!loading && searched && (
           <>
             <p className="text-muted-foreground mb-6">
-              {results.length} result{results.length !== 1 ? 's' : ''} for "{searchParams.get('q')}"
+              {results.length} result{results.length !== 1 ? 's' : ''} for &quot;{searchParams.get('q')}&quot;
             </p>
             {results.length > 0 ? (
               <ArticleGrid articles={results} />
