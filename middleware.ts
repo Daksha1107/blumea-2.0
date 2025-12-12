@@ -2,6 +2,37 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
+async function checkAuthentication(request: NextRequest, path: string) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token) {
+    // Return 401 for API routes, redirect for pages
+    if (path.startsWith('/api/admin')) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    const url = new URL('/api/auth/signin', request.url);
+    url.searchParams.set('callbackUrl', path);
+    return NextResponse.redirect(url);
+  }
+
+  // Check if user has at least viewer role
+  if (!token.role) {
+    return NextResponse.json(
+      { error: 'Forbidden', message: 'No role assigned' },
+      { status: 403 }
+    );
+  }
+
+  return null; // Authentication successful
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const response = NextResponse.next();
@@ -27,55 +58,11 @@ export async function middleware(request: NextRequest) {
   headers.set('X-XSS-Protection', '1; mode=block');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-  // Protect /admin routes
-  if (path.startsWith('/admin') && !path.startsWith('/admin/login')) {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
-      // Return 401 for API routes, redirect for pages
-      if (path.startsWith('/api/admin')) {
-        return NextResponse.json(
-          { error: 'Unauthorized', message: 'Authentication required' },
-          { status: 401 }
-        );
-      }
-      
-      const url = new URL('/api/auth/signin', request.url);
-      url.searchParams.set('callbackUrl', path);
-      return NextResponse.redirect(url);
-    }
-
-    // Check if user has at least viewer role
-    if (!token.role) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'No role assigned' },
-        { status: 403, headers }
-      );
-    }
-  }
-
-  // Protect /api/admin routes
-  if (path.startsWith('/api/admin')) {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401, headers }
-      );
-    }
-
-    if (!token.role) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Insufficient permissions' },
-        { status: 403, headers }
-      );
+  // Protect admin and API admin routes
+  if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
+    const authResponse = await checkAuthentication(request, path);
+    if (authResponse) {
+      return authResponse;
     }
   }
 

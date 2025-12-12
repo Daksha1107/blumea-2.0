@@ -45,7 +45,7 @@ export default function ArticleCarousel({ newArticles, popularArticles }: Articl
       </div>
 
       {/* Horizontal scroll container */}
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="overflow-x-auto hide-scrollbar">
         <div className="flex gap-6 pb-4" style={{ scrollSnapType: 'x mandatory' }}>
           {articles.map((article) => (
             <Link
@@ -78,16 +78,6 @@ export default function ArticleCarousel({ newArticles, popularArticles }: Articl
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
