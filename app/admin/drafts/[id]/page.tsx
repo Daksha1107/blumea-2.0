@@ -16,6 +16,8 @@ export default function DraftEditorPage() {
 
   const [article, setArticle] = useState<Partial<Article> | null>(null);
   const [bodyHtml, setBodyHtml] = useState('');
+  const [lastSavedBodyHtml, setLastSavedBodyHtml] = useState('');
+  const [lastSavedSeo, setLastSavedSeo] = useState<SEOMetadata | null>(null);
   const [seo, setSeo] = useState<SEOMetadata>({
     title: '',
     description: '',
@@ -36,16 +38,23 @@ export default function DraftEditorPage() {
     fetchArticle();
   }, [articleId]);
 
-  // Auto-save every 10 seconds
+  // Auto-save every 10 seconds if content changed
   useEffect(() => {
     if (!autoSaveEnabled || !article) return;
 
     const interval = setInterval(() => {
-      handleSave();
+      // Only save if content has changed
+      const hasChanges = 
+        bodyHtml !== lastSavedBodyHtml || 
+        JSON.stringify(seo) !== JSON.stringify(lastSavedSeo);
+      
+      if (hasChanges) {
+        handleSave();
+      }
     }, 10000); // 10 seconds
 
     return () => clearInterval(interval);
-  }, [bodyHtml, seo, autoSaveEnabled, article]);
+  }, [bodyHtml, seo, lastSavedBodyHtml, lastSavedSeo, autoSaveEnabled, article]);
 
   // Keyboard shortcut: Cmd+S to save
   useEffect(() => {
@@ -72,7 +81,9 @@ export default function DraftEditorPage() {
       const data = await response.json();
       setArticle(data.article);
       setBodyHtml(data.article.bodyHtml || '');
+      setLastSavedBodyHtml(data.article.bodyHtml || '');
       setSeo(data.article.seo || seo);
+      setLastSavedSeo(data.article.seo || seo);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch article');
@@ -103,6 +114,8 @@ export default function DraftEditorPage() {
       }
 
       setLastSaved(new Date());
+      setLastSavedBodyHtml(bodyHtml);
+      setLastSavedSeo(seo);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save article');

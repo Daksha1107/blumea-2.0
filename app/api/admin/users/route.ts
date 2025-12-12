@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate temporary password (in production, send invite email)
+    // TODO: Properly hash password with bcrypt in production
     const tempPassword = Math.random().toString(36).slice(-8);
 
     const newUser: Omit<User, '_id'> = {
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       name,
       role,
       status: 'active',
-      passwordHash: tempPassword, // In production, hash this properly
+      passwordHash: tempPassword, // TODO: In production, use bcrypt.hash(tempPassword, 10)
       createdAt: new Date(),
       updatedAt: new Date(),
     };
